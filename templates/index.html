@@ -39,14 +39,14 @@
                             <span class="animate-spin">⏳</span>
                             <span id="progressStatus">Downloading...</span>
                         </span>
-                        <span class="text-purple-900 font-bold text-lg" id="progressPercent">0%</span>
+                        <span class="text-purple-900 font-bold text-xl" id="progressPercent">0%</span>
                     </div>
                     
                     <!-- Progress Bar -->
-                    <div class="w-full bg-gray-200 rounded-full h-4 mb-3 overflow-hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-5 mb-3 overflow-hidden shadow-inner">
                         <div 
                             id="progressBar"
-                            class="bg-gradient-to-r from-purple-600 to-pink-600 h-4 rounded-full transition-all duration-300 ease-out flex items-center justify-end px-2"
+                            class="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 h-5 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
                             style="width: 0%"
                         >
                             <span class="text-white text-xs font-bold" id="barPercent"></span>
@@ -54,27 +54,22 @@
                     </div>
                     
                     <!-- Speed & ETA -->
-                    <div class="flex justify-between text-sm text-gray-600">
-                        <span class="flex items-center gap-1">
-                            <span class="font-semibold">Speed:</span> 
-                            <span class="text-purple-700 font-bold" id="downloadSpeed">Calculating...</span>
-                        </span>
-                        <span class="flex items-center gap-1">
-                            <span class="font-semibold">ETA:</span> 
-                            <span class="text-pink-700 font-bold" id="downloadEta">Calculating...</span>
-                        </span>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div class="bg-white rounded-lg p-3 text-center">
+                            <div class="text-xs text-gray-500 mb-1">Download Speed</div>
+                            <div class="text-purple-700 font-bold text-sm" id="downloadSpeed">--</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 text-center">
+                            <div class="text-xs text-gray-500 mb-1">Time Remaining</div>
+                            <div class="text-pink-700 font-bold text-sm" id="downloadEta">--</div>
+                        </div>
                     </div>
                     
                     <!-- File Info -->
-                    <div class="mt-3 pt-3 border-t border-purple-200">
-                        <p class="text-xs text-gray-600">
-                            <span class="font-semibold">File:</span> 
-                            <span id="fileName">Preparing...</span>
-                        </p>
-                        <p class="text-xs text-gray-600 mt-1">
-                            <span class="font-semibold">Size:</span> 
-                            <span id="fileSize">Calculating...</span>
-                        </p>
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-xs text-gray-500 mb-1">File Information</div>
+                        <div class="text-gray-800 font-medium text-sm truncate" id="fileName">Preparing...</div>
+                        <div class="text-gray-600 text-xs mt-1" id="fileSize">Size: --</div>
                     </div>
                 </div>
             </div>
@@ -140,7 +135,8 @@
 
     <script>
         let selectedQuality = '1080p';
-        let downloadJobId = null;
+        let currentJobId = null;
+        let progressInterval = null;
 
         function selectQuality(quality, btn) {
             selectedQuality = quality;
@@ -155,10 +151,10 @@
             let classes = 'mx-6 md:mx-8 mb-4 p-4 rounded-lg flex items-center gap-3 ';
             
             if (type === 'success') {
-                classes += 'bg-green-50 text-green-700';
+                classes += 'bg-green-50 text-green-700 border-2 border-green-200';
                 message = '✅ ' + message;
             } else {
-                classes += 'bg-red-50 text-red-700';
+                classes += 'bg-red-50 text-red-700 border-2 border-red-200';
                 message = '❌ ' + message;
             }
             
@@ -168,21 +164,23 @@
         }
 
         function setButtonsDisabled(disabled) {
-            document.getElementById('videoBtn').disabled = disabled;
-            document.getElementById('audioBtn').disabled = disabled;
-            document.querySelectorAll('.quality-btn').forEach(btn => btn.disabled = disabled);
+            const buttons = ['videoBtn', 'audioBtn'];
+            buttons.forEach(id => {
+                const btn = document.getElementById(id);
+                btn.disabled = disabled;
+                if (disabled) {
+                    btn.classList.add('opacity-50', 'cursor-not-allowed', 'scale-100');
+                } else {
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            });
             
-            if (disabled) {
-                document.getElementById('videoBtn').classList.add('opacity-50', 'cursor-not-allowed');
-                document.getElementById('audioBtn').classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                document.getElementById('videoBtn').classList.remove('opacity-50', 'cursor-not-allowed');
-                document.getElementById('audioBtn').classList.remove('opacity-50', 'cursor-not-allowed');
-            }
+            document.querySelectorAll('.quality-btn').forEach(btn => {
+                btn.disabled = disabled;
+            });
         }
 
         function updateProgress(data) {
-            const progressSection = document.getElementById('progressSection');
             const progressBar = document.getElementById('progressBar');
             const progressPercent = document.getElementById('progressPercent');
             const barPercent = document.getElementById('barPercent');
@@ -190,47 +188,54 @@
             const downloadEta = document.getElementById('downloadEta');
             const fileName = document.getElementById('fileName');
             const fileSize = document.getElementById('fileSize');
-            
-            progressSection.classList.remove('hidden');
+            const progressStatus = document.getElementById('progressStatus');
             
             const percent = Math.round(data.percent || 0);
+            
             progressBar.style.width = percent + '%';
             progressPercent.textContent = percent + '%';
+            barPercent.textContent = percent > 5 ? percent + '%' : '';
             
-            if (percent > 10) {
-                barPercent.textContent = percent + '%';
-            } else {
-                barPercent.textContent = '';
-            }
-            
-            downloadSpeed.textContent = data.speed || 'Calculating...';
-            downloadEta.textContent = data.eta || 'Calculating...';
+            downloadSpeed.textContent = data.speed || '--';
+            downloadEta.textContent = data.eta || '--';
             fileName.textContent = data.filename || 'Preparing...';
-            fileSize.textContent = data.total_size || 'Calculating...';
+            fileSize.textContent = 'Size: ' + (data.total_size || '--');
+            
+            if (data.status === 'processing') {
+                progressStatus.textContent = 'Processing...';
+            } else if (data.status === 'starting') {
+                progressStatus.textContent = 'Starting...';
+            } else {
+                progressStatus.textContent = 'Downloading...';
+            }
         }
 
         function checkProgress() {
-            if (!downloadJobId) return;
+            if (!currentJobId) return;
             
-            fetch(`/progress/${downloadJobId}`)
+            fetch(`/progress/${currentJobId}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'downloading') {
+                    console.log('Progress:', data); // Debug
+                    
+                    if (data.status === 'downloading' || data.status === 'starting' || data.status === 'processing') {
                         updateProgress(data);
-                        setTimeout(checkProgress, 500);
                     } else if (data.status === 'finished') {
-                        updateProgress({ percent: 100, speed: 'Complete', eta: 'Done!' });
+                        updateProgress({ percent: 100, speed: 'Complete', eta: 'Done!', ...data });
+                        
                         setTimeout(() => {
                             document.getElementById('progressSection').classList.add('hidden');
                             showStatus(data.message || 'Download completed successfully! 🎉', 'success');
                             setButtonsDisabled(false);
-                            downloadJobId = null;
-                        }, 1000);
+                            clearInterval(progressInterval);
+                            currentJobId = null;
+                        }, 1500);
                     } else if (data.status === 'error') {
                         document.getElementById('progressSection').classList.add('hidden');
                         showStatus(data.message || 'Download failed!', 'error');
                         setButtonsDisabled(false);
-                        downloadJobId = null;
+                        clearInterval(progressInterval);
+                        currentJobId = null;
                     }
                 })
                 .catch(error => {
@@ -247,6 +252,7 @@
                 return;
             }
 
+            // Reset UI
             setButtonsDisabled(true);
             document.getElementById('statusMsg').classList.add('hidden');
             document.getElementById('progressSection').classList.remove('hidden');
@@ -256,27 +262,36 @@
                 speed: 'Starting...',
                 eta: 'Calculating...',
                 filename: 'Preparing download...',
-                total_size: 'Calculating...'
+                total_size: 'Calculating...',
+                status: 'starting'
             });
 
             try {
                 const response = await fetch('/download', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ url, type, quality: selectedQuality })
+                    body: JSON.stringify({ 
+                        url: url, 
+                        type: type, 
+                        quality: selectedQuality 
+                    })
                 });
 
                 const data = await response.json();
+                console.log('Download response:', data); // Debug
                 
                 if (data.success && data.job_id) {
-                    downloadJobId = data.job_id;
-                    checkProgress();
+                    currentJobId = data.job_id;
+                    
+                    // Start checking progress every 500ms
+                    progressInterval = setInterval(checkProgress, 500);
                 } else {
                     document.getElementById('progressSection').classList.add('hidden');
                     showStatus(data.message || 'Failed to start download', 'error');
                     setButtonsDisabled(false);
                 }
             } catch (error) {
+                console.error('Download error:', error);
                 document.getElementById('progressSection').classList.add('hidden');
                 showStatus('Download failed! Check your connection', 'error');
                 setButtonsDisabled(false);

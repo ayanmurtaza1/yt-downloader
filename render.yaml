@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: youtube-downloader
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+```
+
+### **File 3: `Procfile`** (Alternative to render.yaml)
+```
+web: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300 --workers 2
