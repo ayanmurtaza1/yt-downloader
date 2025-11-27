@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Downloader - Real Progress</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4">
+    
+    <div class="max-w-4xl mx-auto py-8">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">
+                YouTube Downloader
+            </h1>
+            <p class="text-white/80">Fast • Simple • Real-time Progress</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            
+            <div class="p-6 md:p-8">
+                <label class="block text-gray-700 font-semibold mb-3">
+                    📎 YouTube URL
+                </label>
+                <input
+                    type="text"
+                    id="urlInput"
+                    placeholder="Paste YouTube link here..."
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+                >
+            </div>
+
+            <!-- Progress Section -->
+            <div id="progressSection" class="hidden mx-6 md:mx-8 mb-4">
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-purple-700 font-semibold flex items-center gap-2">
+                            <span class="animate-spin">⏳</span>
+                            <span id="progressStatus">Downloading...</span>
+                        </span>
+                        <span class="text-purple-900 font-bold text-lg" id="progressPercent">0%</span>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-gray-200 rounded-full h-4 mb-3 overflow-hidden">
+                        <div 
+                            id="progressBar"
+                            class="bg-gradient-to-r from-purple-600 to-pink-600 h-4 rounded-full transition-all duration-300 ease-out flex items-center justify-end px-2"
+                            style="width: 0%"
+                        >
+                            <span class="text-white text-xs font-bold" id="barPercent"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Speed & ETA -->
+                    <div class="flex justify-between text-sm text-gray-600">
+                        <span class="flex items-center gap-1">
+                            <span class="font-semibold">Speed:</span> 
+                            <span class="text-purple-700 font-bold" id="downloadSpeed">Calculating...</span>
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <span class="font-semibold">ETA:</span> 
+                            <span class="text-pink-700 font-bold" id="downloadEta">Calculating...</span>
+                        </span>
+                    </div>
+                    
+                    <!-- File Info -->
+                    <div class="mt-3 pt-3 border-t border-purple-200">
+                        <p class="text-xs text-gray-600">
+                            <span class="font-semibold">File:</span> 
+                            <span id="fileName">Preparing...</span>
+                        </p>
+                        <p class="text-xs text-gray-600 mt-1">
+                            <span class="font-semibold">Size:</span> 
+                            <span id="fileSize">Calculating...</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success/Error Message -->
+            <div id="statusMsg" class="hidden mx-6 md:mx-8 mb-4 p-4 rounded-lg"></div>
+
+            <div class="px-6 md:px-8 pb-4">
+                <label class="block text-gray-700 font-semibold mb-3">
+                    🎬 Select Quality
+                </label>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="selectQuality('2160p', this)" class="quality-btn px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all">
+                        4K <span class="text-xs opacity-75">(Large)</span>
+                    </button>
+                    <button onclick="selectQuality('1080p', this)" class="quality-btn px-4 py-2 rounded-lg font-medium bg-purple-600 text-white shadow-lg scale-105 transition-all">
+                        Full HD <span class="text-xs opacity-75">(Medium)</span>
+                    </button>
+                    <button onclick="selectQuality('720p', this)" class="quality-btn px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all">
+                        HD <span class="text-xs opacity-75">(Small)</span>
+                    </button>
+                    <button onclick="selectQuality('480p', this)" class="quality-btn px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all">
+                        SD <span class="text-xs opacity-75">(Smaller)</span>
+                    </button>
+                    <button onclick="selectQuality('360p', this)" class="quality-btn px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all">
+                        Low <span class="text-xs opacity-75">(Tiny)</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="px-6 md:px-8 pb-6">
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="download('video')" id="videoBtn" class="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-105 flex items-center justify-center gap-2">
+                        <span>📥</span>
+                        Download Video
+                    </button>
+                    <button onclick="download('audio')" id="audioBtn" class="bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-105 flex items-center justify-center gap-2">
+                        <span>🎵</span>
+                        Download Audio
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 px-6 md:px-8 py-4 border-t">
+                <div class="flex items-start gap-3 text-sm text-gray-600">
+                    <span class="text-lg">ℹ️</span>
+                    <div>
+                        <p class="font-semibold mb-1">Quick Tips:</p>
+                        <p>• Default quality is <strong>Full HD (1080p)</strong></p>
+                        <p>• Real-time progress with speed indicator</p>
+                        <p>• Files saved in <strong>downloads</strong> folder</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-6">
+            <a href="/fair-use" class="text-white hover:text-white/80 underline font-medium text-lg">
+                📜 Fair Use Policy
+            </a>
+        </div>
+    </div>
+
+    <script>
+        let selectedQuality = '1080p';
+        let downloadJobId = null;
+
+        function selectQuality(quality, btn) {
+            selectedQuality = quality;
+            document.querySelectorAll('.quality-btn').forEach(b => {
+                b.className = 'quality-btn px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all';
+            });
+            btn.className = 'quality-btn px-4 py-2 rounded-lg font-medium bg-purple-600 text-white shadow-lg scale-105 transition-all';
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMsg');
+            let classes = 'mx-6 md:mx-8 mb-4 p-4 rounded-lg flex items-center gap-3 ';
+            
+            if (type === 'success') {
+                classes += 'bg-green-50 text-green-700';
+                message = '✅ ' + message;
+            } else {
+                classes += 'bg-red-50 text-red-700';
+                message = '❌ ' + message;
+            }
+            
+            statusDiv.className = classes;
+            statusDiv.innerHTML = `<span class="font-medium">${message}</span>`;
+            statusDiv.classList.remove('hidden');
+        }
+
+        function setButtonsDisabled(disabled) {
+            document.getElementById('videoBtn').disabled = disabled;
+            document.getElementById('audioBtn').disabled = disabled;
+            document.querySelectorAll('.quality-btn').forEach(btn => btn.disabled = disabled);
+            
+            if (disabled) {
+                document.getElementById('videoBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('audioBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                document.getElementById('videoBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('audioBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function updateProgress(data) {
+            const progressSection = document.getElementById('progressSection');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            const barPercent = document.getElementById('barPercent');
+            const downloadSpeed = document.getElementById('downloadSpeed');
+            const downloadEta = document.getElementById('downloadEta');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            
+            progressSection.classList.remove('hidden');
+            
+            const percent = Math.round(data.percent || 0);
+            progressBar.style.width = percent + '%';
+            progressPercent.textContent = percent + '%';
+            
+            if (percent > 10) {
+                barPercent.textContent = percent + '%';
+            } else {
+                barPercent.textContent = '';
+            }
+            
+            downloadSpeed.textContent = data.speed || 'Calculating...';
+            downloadEta.textContent = data.eta || 'Calculating...';
+            fileName.textContent = data.filename || 'Preparing...';
+            fileSize.textContent = data.total_size || 'Calculating...';
+        }
+
+        function checkProgress() {
+            if (!downloadJobId) return;
+            
+            fetch(`/progress/${downloadJobId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'downloading') {
+                        updateProgress(data);
+                        setTimeout(checkProgress, 500);
+                    } else if (data.status === 'finished') {
+                        updateProgress({ percent: 100, speed: 'Complete', eta: 'Done!' });
+                        setTimeout(() => {
+                            document.getElementById('progressSection').classList.add('hidden');
+                            showStatus(data.message || 'Download completed successfully! 🎉', 'success');
+                            setButtonsDisabled(false);
+                            downloadJobId = null;
+                        }, 1000);
+                    } else if (data.status === 'error') {
+                        document.getElementById('progressSection').classList.add('hidden');
+                        showStatus(data.message || 'Download failed!', 'error');
+                        setButtonsDisabled(false);
+                        downloadJobId = null;
+                    }
+                })
+                .catch(error => {
+                    console.error('Progress check error:', error);
+                });
+        }
+
+        async function download(type) {
+            const url = document.getElementById('urlInput').value.trim();
+            
+            if (!url) {
+                showStatus('Please enter a YouTube URL!', 'error');
+                setTimeout(() => document.getElementById('statusMsg').classList.add('hidden'), 3000);
+                return;
+            }
+
+            setButtonsDisabled(true);
+            document.getElementById('statusMsg').classList.add('hidden');
+            document.getElementById('progressSection').classList.remove('hidden');
+            
+            updateProgress({
+                percent: 0,
+                speed: 'Starting...',
+                eta: 'Calculating...',
+                filename: 'Preparing download...',
+                total_size: 'Calculating...'
+            });
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ url, type, quality: selectedQuality })
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.job_id) {
+                    downloadJobId = data.job_id;
+                    checkProgress();
+                } else {
+                    document.getElementById('progressSection').classList.add('hidden');
+                    showStatus(data.message || 'Failed to start download', 'error');
+                    setButtonsDisabled(false);
+                }
+            } catch (error) {
+                document.getElementById('progressSection').classList.add('hidden');
+                showStatus('Download failed! Check your connection', 'error');
+                setButtonsDisabled(false);
+            }
+        }
+    </script>
+</body>
+</html>
